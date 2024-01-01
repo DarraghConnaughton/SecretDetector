@@ -1,10 +1,15 @@
 package helper
 
 import (
+	"flag"
 	"fmt"
+	"github.com/pelletier/go-toml/v2"
+	"log"
 	"math"
 	"os"
 	"path/filepath"
+	"regexp"
+	"secretdetecion/cmd/types"
 	"time"
 )
 
@@ -14,7 +19,7 @@ func CheckError(e error) {
 	}
 }
 
-func CollectFiles(startDir string) ([]string, error) {
+func collectFiles(startDir string) ([]string, error) {
 	var files []string
 
 	err := filepath.Walk(startDir, func(fp string, fi os.FileInfo, err error) error {
@@ -71,4 +76,60 @@ func SplitFiles(files []string, num int) [][]string {
 	}
 
 	return result
+}
+
+func retrieveFilePath() string {
+	var tfilePath string
+	flag.StringVar(&tfilePath, "filepath", "./", "start path for recursive search.")
+	flag.Parse()
+	return tfilePath
+}
+
+func RetrieveContext() (types.Context, error) {
+	var tContext types.Context
+	pwd, err := os.Getwd()
+	if err != nil {
+		return tContext, err
+	}
+	tContext.SecretPatterns, err = getToml(fmt.Sprintf("%s/cmd/secretdetection/data/secretpatterns.toml", pwd))
+	if err != nil {
+		return tContext, err
+	}
+
+	tContext.FilePaths, err = collectFiles(retrieveFilePath())
+	if err != nil {
+		return tContext, err
+	}
+
+	log.Println(fmt.Sprintf("[/]secret patterns loaded: %d", len(tContext.SecretPatterns)))
+	return tContext, nil
+}
+
+func DetectPattern(regex *regexp.Regexp, line string) []string {
+	return regex.FindAllString(line, -1)
+}
+
+func getToml(filename string) ([]*regexp.Regexp, error) {
+	log.Println(fmt.Sprintf("[+]retrieving secret patterns from %s", filename))
+	_, err := os.Stat(filename)
+	if err != nil {
+		return nil, err
+	}
+
+	dat, err := os.ReadFile(filename)
+	if err != nil {
+		return nil, err
+	}
+
+	var cfg types.TomlConfig
+	err = toml.Unmarshal(dat, &cfg)
+	if err != nil {
+		return nil, err
+	}
+
+	compiledRegex := []*regexp.Regexp{}
+	for _, v := range cfg.Rules {
+		compiledRegex = append(compiledRegex, regexp.MustCompile(v.Regex))
+	}
+	return compiledRegex, nil
 }

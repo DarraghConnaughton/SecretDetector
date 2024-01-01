@@ -1,4 +1,6 @@
-package secretdetection
+package types
+
+import "regexp"
 
 type Rule struct {
 	ID          string   `toml:"id"`
@@ -22,4 +24,9 @@ type Line struct {
 
 type TomlConfig struct {
 	Rules []Rule `toml:"rules"`
+}
+
+type Context struct {
+	FilePaths      []string
+	SecretPatterns []*regexp.Regexp
 }
