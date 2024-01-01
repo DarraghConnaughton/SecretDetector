@@ -7,6 +7,7 @@ import (
 	"secretdetecion/cmd/helper"
 	"secretdetecion/cmd/secretdetection"
 	"secretdetecion/cmd/types"
+	"strconv"
 )
 
 // defining main function
@@ -22,17 +23,14 @@ func main() {
 	}
 
 	startTime := helper.CurrentTime()
-	log.Println(fmt.Sprintf("[/]start time: %s", startTime))
-
+	log.Println(fmt.Sprintf("[/]start time: %s", strconv.FormatInt(startTime, 10)))
 	report, err := secretdetection.DetectSecrets(context)
 	helper.CheckError(err)
 
 	endTime := helper.CurrentTime()
-	log.Println(fmt.Sprintf("[/]end time: %s", endTime))
-	log.Println("[/]...")
-	log.Println("[/]...")
-	log.Println(fmt.Sprintf("[/]total files processed: %d;  in %s time", len(context.FilePaths), helper.TimeDiff(startTime, endTime)))
-	log.Println("Amalgamated Report:", report)
-	log.Println("# of Potential Secrets Found:", len(report.Secrets))
-
+	log.Println(fmt.Sprintf("[/]end time: %s [/]total files processed: %d;  in %s time\n# of Potential Secrets Found: %d",
+		strconv.FormatInt(endTime, 10),
+		len(context.FilePaths),
+		helper.TimeDiff(startTime, endTime),
+		len(report.Secrets)))
 }
