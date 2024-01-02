@@ -12,7 +12,6 @@ import (
 
 // defining main function
 func main() {
-
 	log.SetFlags(log.LstdFlags | log.Lmicroseconds)
 
 	var context types.Context
