@@ -3,7 +3,9 @@
 .PHONY: build test coverage
 
 # Output binary name with timestamp
-BINARY_NAME = secretdetector_$(shell date +"%Y%m%d_%H%M%S")
+#BINARY_NAME = secretdetector_$(shell date +"%Y%m%d_%H%M%S")
+BINARY_NAME = secretdetector
+
 
 build:
 	make update-readme

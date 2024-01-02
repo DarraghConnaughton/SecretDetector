@@ -78,25 +78,21 @@ func SplitFiles(files []string, num int) [][]string {
 	return result
 }
 
-func retrieveFilePath() string {
-	var tfilePath string
-	flag.StringVar(&tfilePath, "filepath", "./", "start path for recursive search.")
+func RetrieveFlags(filepath *string, configpath *string) {
+	flag.StringVar(filepath, "filepath", "/cmd/thirdParty", "start path for recursive search.")
+	flag.StringVar(configpath, "configpath", "/cmd/secretpatterns.toml", "regex for known secret patterns.")
 	flag.Parse()
-	return tfilePath
 }
 
-func RetrieveContext() (types.Context, error) {
+func RetrieveContext(searchStartDir string, configPath string) (types.Context, error) {
+	var err error
 	var tContext types.Context
-	pwd, err := os.Getwd()
-	if err != nil {
-		return tContext, err
-	}
-	tContext.SecretPatterns, err = getToml(fmt.Sprintf("%s/cmd/secretdetection/data/secretpatterns.toml", pwd))
-	if err != nil {
-		return tContext, err
-	}
 
-	tContext.FilePaths, err = collectFiles(retrieveFilePath())
+	tContext.SecretPatterns, err = getToml(configPath)
+	if err != nil {
+		return tContext, err
+	}
+	tContext.FilePaths, err = collectFiles(searchStartDir)
 	if err != nil {
 		return tContext, err
 	}

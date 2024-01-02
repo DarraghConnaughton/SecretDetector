@@ -12,8 +12,8 @@ type Rule struct {
 
 // Secrets can be expanded to include the line number as well.
 type Report struct {
-	Timestamp int64  `toml:"timestamp"`
-	Secrets   []Line `toml:"secrets"`
+	Timestamp int64  `json:"timestamp"`
+	Secrets   []Line `json:"secrets"`
 }
 
 type Line struct {
@@ -29,4 +29,7 @@ type TomlConfig struct {
 type Context struct {
 	FilePaths      []string
 	SecretPatterns []*regexp.Regexp
+	PatternConfig  string
+	StartTime      int64
+	EndTime        int64
 }
