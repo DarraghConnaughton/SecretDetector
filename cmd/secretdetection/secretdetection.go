@@ -3,7 +3,7 @@ package secretdetection
 import (
 	"bufio"
 	"fmt"
-	"log"
+	"math"
 	"os"
 	"regexp"
 	"secretdetecion/cmd/helper"
@@ -62,7 +62,6 @@ func amalgamator(ch chan types.Line, outputChan chan types.Report, wg *sync.Wait
 	for line := range ch {
 		tmp = append(tmp, line)
 	}
-
 	outputChan <- types.Report{
 		Timestamp: helper.CurrentTime(),
 		Secrets:   tmp,
@@ -83,17 +82,9 @@ func DetectSecrets(ctx types.Context) (types.Report, error) {
 	var consumersWg sync.WaitGroup
 	var almalWg sync.WaitGroup
 
-	log.Println(ctx.FilePaths)
-	log.Println(ctx.SecretPatterns)
-	log.Println("ctx.SecretPatternsctx.SecretPatternsctx.SecretPatterns")
-
+	NumOfCPUs = int(math.Min(float64(len(ctx.FilePaths)), float64(NumOfCPUs)))
 	splitFiles := helper.SplitFiles(ctx.FilePaths, NumOfCPUs)
 	if len(splitFiles) > 0 {
-
-		log.Println("************************")
-		log.Println(splitFiles)
-		log.Println(len(splitFiles))
-		log.Println("************************")
 		for i := 0; i < NumOfCPUs; i++ {
 			producersWg.Add(1)
 			go producer(splitFiles[i], lineChannel, &producersWg)
@@ -122,8 +113,6 @@ func DetectSecrets(ctx types.Context) (types.Report, error) {
 		almalWg.Wait()
 
 		report = <-resultChannel
-
 	}
 	return report, nil
-
 }

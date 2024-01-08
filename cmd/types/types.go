@@ -29,7 +29,6 @@ type TomlConfig struct {
 type Context struct {
 	FilePaths      []string
 	SecretPatterns []*regexp.Regexp
-	PatternConfig  string
 	StartTime      int64
 	EndTime        int64
 }
