@@ -74,7 +74,8 @@ func TestTimeFunctions(t *testing.T) {
 }
 
 func TestRetrieveContext(t *testing.T) {
-	ctx, err := RetrieveContext("/", "./notreal")
+	var ctx types.Context
+	err := RetrieveContext(&ctx, "/", "./notreal")
 	if err == nil {
 		t.Errorf("")
 	}
@@ -85,7 +86,7 @@ func TestRetrieveContext(t *testing.T) {
 		t.Errorf("")
 	}
 
-	ctx, err = RetrieveContext("./", "./testdata/secretpatterns.toml")
+	err = RetrieveContext(&ctx, "./", "./testdata/secretpatterns.toml")
 	if err != nil {
 		t.Errorf("")
 	}
@@ -104,7 +105,7 @@ func TestRetrieveFlagsAndCheckError(t *testing.T) {
 	if s1 != "./" {
 		t.Errorf("fail: expected default secret path.")
 	}
-	if s2 != "/cmd/secretpatterns.toml" {
+	if s2 != "./data/secretpatterns.toml" {
 		t.Errorf("fail: expected default secret patterns path.")
 	}
 	if s3 != "./report.json" {

@@ -65,25 +65,25 @@ func SplitFiles(files []string, num int) [][]string {
 
 func RetrieveFlags(filepath *string, configpath *string, reportPath *string) {
 	flag.StringVar(filepath, "filepath", "./", "start path for recursive search. \n[default] current directory.")
-	flag.StringVar(configpath, "configpath", "/cmd/secretpatterns.toml", "regex for known secret patterns.")
+	flag.StringVar(configpath, "configpath", "./data/secretpatterns.toml", "regex for known secret patterns.")
 	flag.StringVar(reportPath, "reportpath", "./report.json", "where to write report.")
 	flag.Parse()
 }
 
-func RetrieveContext(searchStartDir string, configPath string) (types.Context, error) {
+func RetrieveContext(tContext *types.Context, searchStartDir string, configPath string) error {
 	var err error
-	var tContext types.Context
+	//var tContext types.Context
 
 	tContext.SecretPatterns, err = GetToml(configPath)
 	if err != nil {
-		return tContext, err
+		return err
 	}
 	// Retrieving files paths is the more expensive operation. No point initiating this process if the
 	// config is invalid.
 	tContext.FilePaths = collectFiles(searchStartDir)
 
 	log.Println(fmt.Sprintf("[/]secret patterns loaded: %d", len(tContext.SecretPatterns)))
-	return tContext, nil
+	return nil
 }
 
 func DetectPattern(regex *regexp.Regexp, line string) []string {

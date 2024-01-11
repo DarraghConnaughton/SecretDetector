@@ -7,7 +7,8 @@ import (
 )
 
 func TestSecretDetection(t *testing.T) {
-	report, err := DetectSecrets(types.Context{
+	var report types.Report
+	err := DetectSecrets(&report, types.Context{
 		FilePaths:      []string{"./testdata/testsecrets/forgottenAboutCredentials.txt"},
 		SecretPatterns: nil,
 	})
@@ -23,7 +24,7 @@ func TestSecretDetection(t *testing.T) {
 		t.Errorf("")
 	}
 
-	report, err = DetectSecrets(types.Context{
+	err = DetectSecrets(&report, types.Context{
 		FilePaths:      []string{"./testdata/testsecrets/forgottenAboutCredentials.txt"},
 		SecretPatterns: patterns,
 	})

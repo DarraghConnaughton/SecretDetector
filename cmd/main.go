@@ -7,23 +7,27 @@ import (
 	"secretdetecion/cmd/types"
 )
 
-// defining main function
+var (
+	context    types.Context
+	report     types.Report
+	configPath string
+	filePath   string
+	reportPath string
+)
+
 func main() {
-	var configPath, filePath, reportPath string
-	var context types.Context
-	var err error
-
 	log.SetFlags(log.LstdFlags | log.Lmicroseconds)
+
+	// Load configuration parameters and secret detection context.
 	helper.RetrieveFlags(&filePath, &configPath, &reportPath)
+	helper.CheckError(
+		helper.RetrieveContext(&context, filePath, configPath))
 
-	context, err = helper.RetrieveContext(filePath, configPath)
-	helper.CheckError(err)
+	// Detect secrets and generate report.
+	helper.CheckError(
+		secretdetection.DetectSecrets(&report, context))
 
-	context.StartTime = helper.CurrentTime()
-	report, err := secretdetection.DetectSecrets(context)
-	helper.CheckError(err)
-
-	context.EndTime = helper.CurrentTime()
-	err = helper.HandleReport(reportPath, report, context)
-	helper.CheckError(err)
+	// Display and write report.
+	helper.CheckError(
+		helper.HandleReport(reportPath, report, context))
 }

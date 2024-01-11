@@ -69,8 +69,8 @@ func amalgamator(ch chan types.Line, outputChan chan types.Report, wg *sync.Wait
 	close(outputChan)
 }
 
-func DetectSecrets(ctx types.Context) (types.Report, error) {
-	var report types.Report
+func DetectSecrets(report *types.Report, ctx types.Context) error {
+	//var report types.Report
 	// Channel between producer and consumer
 	lineChannel := make(chan types.Line, 50)
 	// Channel between consumer and amalgamation goroutine
@@ -85,6 +85,9 @@ func DetectSecrets(ctx types.Context) (types.Report, error) {
 	NumOfCPUs = int(math.Min(float64(len(ctx.FilePaths)), float64(NumOfCPUs)))
 	splitFiles := helper.SplitFiles(ctx.FilePaths, NumOfCPUs)
 	if len(splitFiles) > 0 {
+
+		//Benchmarking should start here
+		ctx.StartTime = helper.CurrentTime()
 		for i := 0; i < NumOfCPUs; i++ {
 			producersWg.Add(1)
 			go producer(splitFiles[i], lineChannel, &producersWg)
@@ -112,7 +115,8 @@ func DetectSecrets(ctx types.Context) (types.Report, error) {
 		consumersWg.Wait()
 		almalWg.Wait()
 
-		report = <-resultChannel
+		*report = <-resultChannel
 	}
-	return report, nil
+	ctx.EndTime = helper.CurrentTime()
+	return nil
 }
