@@ -105,7 +105,8 @@ func TestRetrieveFlagsAndCheckError(t *testing.T) {
 	if s1 != "./" {
 		t.Errorf("fail: expected default secret path.")
 	}
-	if s2 != "./data/secretpatterns.toml" {
+
+	if s2 != "/cmd/data/secretpatterns.toml" {
 		t.Errorf("fail: expected default secret patterns path.")
 	}
 	if s3 != "./report.json" {

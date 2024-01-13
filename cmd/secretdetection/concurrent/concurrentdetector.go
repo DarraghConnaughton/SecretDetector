@@ -1,24 +1,35 @@
-package secretdetection
+package concurrent
 
 import (
 	"bufio"
-	"fmt"
+	"log"
 	"math"
 	"os"
 	"regexp"
+	"runtime"
 	"secretdetecion/cmd/helper"
 	"secretdetecion/cmd/types"
 	"sync"
 )
 
+var NumOfCPUs = runtime.NumCPU() / 2
+
+type ConcurrentSecretDetector struct {
+	types.SecretDetectorInterface
+	Report types.Report
+	Ctx    types.Context
+}
+
 // Producer reads lines from multiple files and sends them to the channel
 func producer(filePaths []string, ch chan types.Line, wg *sync.WaitGroup) {
+	//fmt.Println("producer coming online!")
+
 	defer wg.Done()
 	for _, filePath := range filePaths {
 		lineNo := 0
 		file, err := os.Open(filePath)
 		if err != nil {
-			fmt.Println("Error opening file:", err)
+			log.Println("Error opening file:", err)
 			continue
 		}
 
@@ -35,16 +46,18 @@ func producer(filePaths []string, ch chan types.Line, wg *sync.WaitGroup) {
 		}
 
 		if err := scanner.Err(); err != nil {
-			fmt.Println("[-]Error reading file:", err)
+			log.Println("[-]Error reading file:", err)
 		}
 		if err := file.Close(); err != nil {
-			fmt.Println("[-]Error closing file:", err)
+			log.Println("[-]Error closing file:", err)
 		}
 	}
 }
 
 // Consumer reads lines from the channel and prints them along with line numbers
 func consumer(ch chan types.Line, outputch chan types.Line, secretPatterns []*regexp.Regexp, wg *sync.WaitGroup) {
+	//fmt.Println("consumer coming online!")
+
 	defer wg.Done()
 	for line := range ch {
 		for _, rePattern := range secretPatterns {
@@ -57,6 +70,8 @@ func consumer(ch chan types.Line, outputch chan types.Line, secretPatterns []*re
 }
 
 func amalgamator(ch chan types.Line, outputChan chan types.Report, wg *sync.WaitGroup) {
+	//fmt.Println("amalgamator coming online!")
+
 	defer wg.Done()
 	tmp := []types.Line{}
 	for line := range ch {
@@ -69,8 +84,10 @@ func amalgamator(ch chan types.Line, outputChan chan types.Report, wg *sync.Wait
 	close(outputChan)
 }
 
-func DetectSecrets(report *types.Report, ctx types.Context) error {
-	//var report types.Report
+func (csd *ConcurrentSecretDetector) StartScan() {
+	log.Println("[+] Starting Concurrent Secret Detection.")
+
+	var starttime int64
 	// Channel between producer and consumer
 	lineChannel := make(chan types.Line, 50)
 	// Channel between consumer and amalgamation goroutine
@@ -82,12 +99,12 @@ func DetectSecrets(report *types.Report, ctx types.Context) error {
 	var consumersWg sync.WaitGroup
 	var almalWg sync.WaitGroup
 
-	NumOfCPUs = int(math.Min(float64(len(ctx.FilePaths)), float64(NumOfCPUs)))
-	splitFiles := helper.SplitFiles(ctx.FilePaths, NumOfCPUs)
+	NumOfCPUs = int(math.Min(float64(len(csd.Ctx.FilePaths)), float64(NumOfCPUs)))
+	splitFiles := helper.SplitFiles(csd.Ctx.FilePaths, NumOfCPUs)
 	if len(splitFiles) > 0 {
 
 		//Benchmarking should start here
-		ctx.StartTime = helper.CurrentTime()
+		starttime = helper.CurrentTime()
 		for i := 0; i < NumOfCPUs; i++ {
 			producersWg.Add(1)
 			go producer(splitFiles[i], lineChannel, &producersWg)
@@ -95,7 +112,7 @@ func DetectSecrets(report *types.Report, ctx types.Context) error {
 
 		for i := 0; i < NumOfCPUs; i++ {
 			consumersWg.Add(1)
-			go consumer(lineChannel, outputChannel, ctx.SecretPatterns, &consumersWg)
+			go consumer(lineChannel, outputChannel, csd.Ctx.SecretPatterns, &consumersWg)
 		}
 
 		almalWg.Add(1)
@@ -115,8 +132,15 @@ func DetectSecrets(report *types.Report, ctx types.Context) error {
 		consumersWg.Wait()
 		almalWg.Wait()
 
-		*report = <-resultChannel
+		csd.Report = <-resultChannel
 	}
-	ctx.EndTime = helper.CurrentTime()
-	return nil
+	csd.Report.EndTime = helper.CurrentTime()
+	csd.Report.StartTime = starttime
+}
+
+func New(ctx types.Context) ConcurrentSecretDetector {
+	return ConcurrentSecretDetector{
+		Ctx:    ctx,
+		Report: types.Report{},
+	}
 }

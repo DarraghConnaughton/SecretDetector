@@ -11,7 +11,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"secretdetecion/cmd/types"
-	"strconv"
+	"strings"
 	"time"
 )
 
@@ -24,10 +24,8 @@ func CheckError(e error) {
 func collectFiles(startDir string) []string {
 	var files []string
 	filepath.Walk(startDir, func(fp string, fi os.FileInfo, err error) error {
-		if !fi.IsDir() {
+		if !fi.IsDir() && !strings.Contains(fp, "vendor/") {
 			files = append(files, fp)
-		} else {
-			log.Println(fmt.Sprintf("[/]directory encountered: %s", fi.Name()))
 		}
 		return nil
 	})
@@ -35,8 +33,7 @@ func collectFiles(startDir string) []string {
 }
 
 func CurrentTime() int64 {
-	currentTime := time.Now()
-	return currentTime.Unix()
+	return time.Now().Unix()
 }
 
 func TimeDiff(t1 int64, t2 int64) time.Duration {
@@ -65,15 +62,13 @@ func SplitFiles(files []string, num int) [][]string {
 
 func RetrieveFlags(filepath *string, configpath *string, reportPath *string) {
 	flag.StringVar(filepath, "filepath", "./", "start path for recursive search. \n[default] current directory.")
-	flag.StringVar(configpath, "configpath", "./data/secretpatterns.toml", "regex for known secret patterns.")
+	flag.StringVar(configpath, "configpath", "/cmd/data/secretpatterns.toml", "regex for known secret patterns.")
 	flag.StringVar(reportPath, "reportpath", "./report.json", "where to write report.")
 	flag.Parse()
 }
 
 func RetrieveContext(tContext *types.Context, searchStartDir string, configPath string) error {
 	var err error
-	//var tContext types.Context
-
 	tContext.SecretPatterns, err = GetToml(configPath)
 	if err != nil {
 		return err
@@ -115,12 +110,12 @@ func GetToml(filename string) ([]*regexp.Regexp, error) {
 	return compiledRegex, nil
 }
 
-func safeDiplayReport(report types.Report, ctx types.Context) {
-	log.Println(fmt.Sprintf("[/]start time: %s", strconv.FormatInt(ctx.StartTime, 10)))
-	log.Println(fmt.Sprintf("[/]end time: %s [/]total files processed: %d;  in %s time\n# of Potential Secrets Found: %d",
-		strconv.FormatInt(ctx.EndTime, 10),
+func DiplayReport(report types.Report, ctx types.Context) {
+	log.Println(fmt.Sprintf("[/]start time: %d", report.StartTime))
+	log.Println(fmt.Sprintf("[/]end time: %d [/]total files processed: %d;  in %s time\n# of Potential Secrets Found: %d",
+		report.EndTime,
 		len(ctx.FilePaths),
-		TimeDiff(ctx.StartTime, ctx.EndTime),
+		TimeDiff(report.StartTime, report.EndTime),
 		len(report.Secrets)))
 }
 
@@ -143,6 +138,6 @@ func writeReport(writePath string, report types.Report) error {
 }
 
 func HandleReport(writePath string, report types.Report, ctx types.Context) error {
-	safeDiplayReport(report, ctx)
+	DiplayReport(report, ctx)
 	return writeReport(writePath, report)
 }

@@ -1,6 +1,8 @@
 package types
 
-import "regexp"
+import (
+	"regexp"
+)
 
 type Rule struct {
 	ID          string   `toml:"id"`
@@ -10,10 +12,11 @@ type Rule struct {
 	Keywords    []string `toml:"keywords"`
 }
 
-// Secrets can be expanded to include the line number as well.
 type Report struct {
 	Timestamp int64  `json:"timestamp"`
 	Secrets   []Line `json:"secrets"`
+	StartTime int64
+	EndTime   int64
 }
 
 type Line struct {
@@ -29,6 +32,8 @@ type TomlConfig struct {
 type Context struct {
 	FilePaths      []string
 	SecretPatterns []*regexp.Regexp
-	StartTime      int64
-	EndTime        int64
+}
+
+type SecretDetectorInterface interface {
+	StartScan()
 }
